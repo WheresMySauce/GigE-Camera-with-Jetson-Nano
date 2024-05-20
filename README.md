@@ -21,26 +21,107 @@ From the website, you can see the latest version of the SDK is **Spinnaker 4.0.0
 
 Scroll to the bottom to the page, you can see the archived version. Here we will use version 2.7.0.128, just hit the download button. If you don't have a screen, just move to your download folder then run:
 
-`wget -O Spinnaker-2.7.0.128-Linux.zip https://flir.netx.net/file/asset/54573/original/attachment`
+`$wget -O Spinnaker-2.7.0.128-Linux.zip https://flir.netx.net/file/asset/54573/original/attachment`
 
 Extract the file:
 
-`unzip Spinnaker-2.7.0.128-Linux.zip`
+`$unzip Spinnaker-2.7.0.128-Linux.zip`
 
 The CPU structure of Jetson Nano is arm64-bionic so let's jump to the folder:
 
-`cd arm64_bionic`
+`$cd arm64_bionic`
 
 In this folder, you will see 3 Python zip file which we will deal later.
-![alt](/Screenshot%20from%202024-05-20%2022-53-16.png) 
+
+![img1](https://i.imgur.com/BlK7x1K.png)
 
 Let's focus on the SDK setting file:
 
-`tar xzvf spinnaker-2.7.0.128-arm64-pkg.tar.gz`
+`$tar xzvf spinnaker-2.7.0.128-arm64-pkg.tar.gz`
 
-`cd spinnaker-2.7.0.128-arm64`
+`$cd spinnaker-2.7.0.128-arm64`
 
 The install guide will be in the ****README_ARM**** file. I will do the copy paste job:
+
+`$sudo apt-get install libusb-1.0-0`
+
+`$sudo sh install_spinnaker_arm.sh`
+
+
+- ### GigE camera settings:
+
+****DISABLE REVERSE PATH FILTERING (RPF):****
+
+`$sudo gedit /etc/sysctl.d/10-network-security.conf`
+
+Comment out the lines below in /etc/sysctl.d/10-network-security.conf:
+
+```
+# Turn on Source Address Verification in all interfaces to
+# in order to prevent some spoofing attacks.
+## net.ipv4.conf.default.rp_filter=1
+## net.ipv4.conf.all.rp_filter=1
+```
+***
+****INCREASE RECEIVE BUFFER SIZE:****
+
+`$sudo gedit /etc/sysctl.conf`
+
+Add the following lines to the bottom of the /etc/sysctl.conf file:
+
+```
+net.core.rmem_max=10485760
+net.core.rmem_default=10485760
+```
+
+Make it permanent:
+`$sudo sysctl -p`
+***
+****ENABLE JUMBO PACKET:****
+
+`$sudo gedit /etc/network/interfaces`
+
+Add the following lines:
+
+```
+iface eth0 inet static
+address 169.254.0.64
+netmask 255.255.0.0
+mtu 9000
+
+auto eth0
+```
+To enable Jumbo Packet for the GigE camera, change SCPS Packet Size
+(GevSCPSPacketSize) to 9000 in SpinView or via Spinnaker API.
+
+Reboot the computer before using any GigE cameras.
+
+- ### Spinnaker SDK Python library (PySpin)
+
+Now head back to the three python file above, notice that Jetson Nano is using **python 3.6.9**, thus we will use the corresponding package:
+
+`$cd ..`
+
+`$tar xzvf spinnaker_python-2.7.0.128-cp36-cp36m-linux_aarch64.tar.gz `
+
+Again, the instruction will be in the ****README.txt**** file.
+
+`$sudo apt-get install python-pip python3-pip`
+
+`$pip install --upgrade pip`
+
+`$sudo pip install keyboard`
+
+`$pip install Pillow numpy==1.19.4`
+
+`$pip install spinnaker_python-2.7.0.128-cp36-cp36m-linux_aarch64.whl`
+
+# Testing
+
+In the Examples folder, there are python scripts for taking the image from the camera and display them and lots more examples. You can use whatever you want
+
+
+
 
 
 
