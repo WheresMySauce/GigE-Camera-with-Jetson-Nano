@@ -11,9 +11,19 @@ In this instruction, we will use Grasshopper2 GigE, you can see the official cam
 
 # Installation
 
-### Camera driver SDK
-- second
-- third
+### Spinnaker SDK
+
+In order to detect the camera, the Jetson Nano must have the SDK which contains all documentation, example source code, precompiled examples, and libraries required to develop application.
+
+First go to this website (you might have to create an account an log in): https://www.flir.com/support-center/iis/machine-vision/downloads/spinnaker-sdk-download/spinnaker-sdk--download-files/ 
+
+From the website, you can see the latest version of the SDK is **Spinnaker 4.0.0.116 for Ubuntu 22.04 (December 21, 2023)**. Since the Jetson Nano is running on Ubuntu 18.04, we won't use this version.
+
+Scroll to the bottom to the page, you can see the archived version. Here we will use version 2.7.0.128, just hit the download button. If you don't have a screen. Just run 
+
+`wget -O SpinakerSDK https://flir.netx.net/file/asset/54573/original/attachment`
+
+
 
 
 
