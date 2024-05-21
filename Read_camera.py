@@ -7,6 +7,7 @@ import cv2
 import sys
 import keyboard
 import time
+import numpy as np
 #----------------------------------------------------------------#
 
 ### Operating variables
@@ -49,7 +50,7 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
     if not PySpin.IsAvailable(node_bufferhandling_mode) or not PySpin.IsWritable(node_bufferhandling_mode):
         print('Unable to set stream buffer handling mode.. Aborting...')
         return False
-
+    
     # Retrieve entry node from enumeration node
     node_newestonly = node_bufferhandling_mode.GetEntryByName('NewestOnly')
     if not PySpin.IsAvailable(node_newestonly) or not PySpin.IsReadable(node_newestonly):
@@ -64,6 +65,21 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
 
     print('*** IMAGE ACQUISITION ***\n')
     try:
+        node_pixel_format = PySpin.CEnumerationPtr(nodemap.GetNode('PixelFormat'))
+        if PySpin.IsAvailable(node_pixel_format) and PySpin.IsWritable(node_pixel_format):
+            # Retrieve the desired entry node from the enumeration node
+            node_pixel_format_BayerRG16 = PySpin.CEnumEntryPtr(node_pixel_format.GetEntryByName('BayerRG8'))
+            if PySpin.IsAvailable(node_pixel_format_BayerRG16) and PySpin.IsReadable(node_pixel_format_BayerRG16):
+                # Retrieve the integer value from the entry node
+                pixel_format_BayerRG16 = node_pixel_format_BayerRG16.GetValue()
+                # Set integer as new value for enumeration node
+                node_pixel_format.SetIntValue(pixel_format_BayerRG16)
+                print('Pixel format set to %s...' % node_pixel_format.GetCurrentEntry().GetSymbolic())
+            else:
+                print('Pixel format BayerRG16 not available...')
+        else:
+            print('Pixel format not available...')
+        
         node_acquisition_mode = PySpin.CEnumerationPtr(nodemap.GetNode('AcquisitionMode'))
         if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
             print('Unable to set acquisition mode to continuous (enum retrieval). Aborting...')
@@ -83,6 +99,7 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
         node_acquisition_mode.SetIntValue(acquisition_mode_continuous)
 
         print('Acquisition mode set to continuous...')
+
 
         #  Begin acquiring images
         #
@@ -104,11 +121,11 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
         #  The device serial number is retrieved in order to keep cameras from
         #  overwriting one another. Grabbing image IDs could also accomplish
         #  this.
-        device_serial_number = ''
-        node_device_serial_number = PySpin.CStringPtr(nodemap_tldevice.GetNode('DeviceSerialNumber'))
-        if PySpin.IsAvailable(node_device_serial_number) and PySpin.IsReadable(node_device_serial_number):
-            device_serial_number = node_device_serial_number.GetValue()
-            print('Device serial number retrieved as %s...' % device_serial_number)
+        # device_serial_number = ''
+        # node_device_serial_number = PySpin.CStringPtr(nodemap_tldevice.GetNode('DeviceSerialNumber'))
+        # if PySpin.IsAvailable(node_device_serial_number) and PySpin.IsReadable(node_device_serial_number):
+        #     device_serial_number = node_device_serial_number.GetValue()
+        #     print('Device serial number retrieved as %s...' % device_serial_number)
 
         # Close program
         print('Press enter to close the program..')
@@ -116,27 +133,31 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
         # Create an OpenCV window
         cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
 
-        # Figure(1) is default so you can omit this line. Figure(0) will create a new window every time program hits this line
-        fig = plt.figure(1)
-
-        # Close the GUI when close event happens
-        fig.canvas.mpl_connect('close_event', handle_close)
-
         # Retrieve and display images
         while continue_recording:
             try:
                 image_result = cam.GetNextImage(1000)
 
+                # Height:  1200px
+                # Width:  1600px
+                # print(image_result.GetColorProcessing().GetSymbolic())
                 if image_result.IsIncomplete():
                     print('Image incomplete with image status %d ...' % image_result.GetImageStatus())
                 else:
                     image_data = image_result.GetNDArray()
+                    color_image = cv2.cvtColor(image_data, cv2.COLOR_BayerRG2RGB)
+                    color_image = cv2.resize(color_image, (1200, 1600))
+                    # image_byarr = image_result.GetData()
+                    # np_array = np.array(image_byarr, dtype=np.uint8)
+                    # image = np_array.reshape(1200, 1600)
 
                     # Show the image in the OpenCV window
-                    cv2.imshow('Camera Feed', image_data)
+                    cv2.imshow('Camera Feed', color_image)
 
+                    
                     # Wait for a key press (1 ms delay)
                     key = cv2.waitKey(1)
+
 
                     # If Enter is pressed, close the program
                     if key == 13:  # 13 is the ASCII code for Enter
@@ -216,15 +237,15 @@ def main():
     system = PySpin.System.GetInstance()
 
     # Get current library version
-    version = system.GetLibraryVersion()
-    print('Library version: %d.%d.%d.%d' % (version.major, version.minor, version.type, version.build))
+    # version = system.GetLibraryVersion()
+    # print('Library version: %d.%d.%d.%d' % (version.major, version.minor, version.type, version.build))
 
     # Retrieve list of cameras from the system
     cam_list = system.GetCameras()
 
     num_cameras = cam_list.GetSize()
 
-    print('Number of cameras detected: %d' % num_cameras)
+    # print('Number of cameras detected: %d' % num_cameras)
 
     # Finish if there are no cameras
     if num_cameras == 0:
@@ -259,7 +280,7 @@ def main():
     # Release system instance
     system.ReleaseInstance()
 
-    input('Done! Press Enter to exit...')
+    # input('Done! Press Enter to exit...')
     return result
 
 if __name__ == '__main__':
