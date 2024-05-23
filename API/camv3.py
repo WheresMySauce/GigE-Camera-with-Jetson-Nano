@@ -14,7 +14,7 @@ class CameraGUI(QWidget):
         super().__init__()
         self.setWindowTitle("Camera Capture & Object Detection")
         self.resize(800, 600)
-
+        
         # UI Elements
         self.camera_label = QLabel("Camera Feed")
         self.camera_label.setAlignment(Qt.AlignCenter)
@@ -102,13 +102,14 @@ class CameraGUI(QWidget):
             self.result_label.setPixmap(pixmap.scaled(self.result_label.size(), Qt.KeepAspectRatio))
 
     def close_event(self):
-
+        
         self.cam.EndAcquisition()
         # Deinitialize camera
         self.cam.DeInit()
         del self.cam
         self.cam_list.Clear()
         self.system.ReleaseInstance()
+        sys.exit(app.exec_())
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
