@@ -13,7 +13,7 @@ class CameraGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Camera Capture & Object Detection")
-        self.resize(800, 600)
+        self.resize(1000, 800)
         
         # UI Elements
         self.camera_label = QLabel("Camera Feed")
@@ -57,7 +57,7 @@ class CameraGUI(QWidget):
             if not PySpin.IsAvailable(node_pixel_format) or not PySpin.IsWritable(node_pixel_format):
                 print('Pixel Format not available')
             # Retrieve entry node from enumeration node
-            node_pixel_format_RGB = node_pixel_format.GetEntryByName('BayerRG8')
+            node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
             if not PySpin.IsAvailable(node_pixel_format_RGB) or not PySpin.IsReadable(node_pixel_format_RGB):
                 ('Unable to set pixel format mode')
             # Retrieve integer value from entry node
@@ -89,22 +89,21 @@ class CameraGUI(QWidget):
         #Read camera
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        frame.Release()
-        frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        print(frame_data.shape)
 
-        img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        img = QImage(frame_data, frame_data.shape[1], frame_data.shape[0], QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(img)
         self.camera_label.setPixmap(pixmap.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
-
-        frame.Release()
+        # frame.Release()
     def capture_and_send(self):
         # ret, frame = self.cap.read()
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', frame)
-        response = requests.post('http://192.168.1.100:5000/detect', data=img_encoded.tobytes())
+        _, img_encoded = cv2.imencode('.jpg', color_image)
+        response = requests.post('http://192.168.0.102:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
