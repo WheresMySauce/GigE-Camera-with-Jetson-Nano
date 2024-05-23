@@ -7,7 +7,7 @@ import cv2
 import requests
 
 import PySpin
-os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+# os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
 class CameraGUI(QWidget):
     def __init__(self):
@@ -45,11 +45,12 @@ class CameraGUI(QWidget):
 
         # Retrieve singleton reference to system object
         self.system = PySpin.System.GetInstance()
+
         # Retrieve list of cameras from the system
         self.cam_list = self.system.GetCameras()
-        self.num_cameras = self.cam_list.GetSize()
-        for i, cam in enumerate(self.cam_list):
-            self.cam = cam.Init()
+        print(self.cam_list)
+        for i, self.cam in enumerate(self.cam_list):
+            self.cam.Init()
             self.nodemap = self.cam.GetNodeMap()
         try:  
             node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
@@ -88,6 +89,7 @@ class CameraGUI(QWidget):
         #Read camera
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
+        frame.Release()
         frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
 
         img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
@@ -102,7 +104,7 @@ class CameraGUI(QWidget):
         frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
 
         _, img_encoded = cv2.imencode('.jpg', frame)
-        response = requests.post('http://127.0.0.1:5000/detect', data=img_encoded.tobytes())
+        response = requests.post('http://192.168.1.100:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
