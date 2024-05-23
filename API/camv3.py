@@ -51,27 +51,35 @@ class CameraGUI(QWidget):
         for i, cam in enumerate(self.cam_list):
             self.cam = cam.Init()
             self.nodemap = self.cam.GetNodeMap()
-        try:
+        try:  
             node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
-            if PySpin.IsAvailable(node_pixel_format) and PySpin.IsWritable(node_pixel_format):
-                # Retrieve the desired entry node from the enumeration node
-                node_pixel_format_BayerRG16 = PySpin.CEnumEntryPtr(node_pixel_format.GetEntryByName('BayerRG8'))
-                if PySpin.IsAvailable(node_pixel_format_BayerRG16) and PySpin.IsReadable(node_pixel_format_BayerRG16):
-                    # Retrieve the integer value from the entry node
-                    pixel_format_BayerRG16 = node_pixel_format_BayerRG16.GetValue()
-                    # Set integer as new value for enumeration node
-                    node_pixel_format.SetIntValue(pixel_format_BayerRG16)
-                    print('Pixel format set to %s...' % node_pixel_format.GetCurrentEntry().GetSymbolic())
-                else:
-                    print('Pixel format BayerRG16 not available...')
-            else:
-                print('Pixel format not available...')   
+            if not PySpin.IsAvailable(node_pixel_format) or not PySpin.IsWritable(node_pixel_format):
+                print('Pixel Format not available')
+            # Retrieve entry node from enumeration node
+            node_pixel_format_RGB = node_pixel_format.GetEntryByName('BayerRG8')
+            if not PySpin.IsAvailable(node_pixel_format_RGB) or not PySpin.IsReadable(node_pixel_format_RGB):
+                ('Unable to set pixel format mode')
+            # Retrieve integer value from entry node
+            pixel_format = node_pixel_format_RGB.GetValue()
+            # Set integer value from entry node as new value of enumeration node
+            node_pixel_format.SetIntValue(pixel_format)
 
+
+            node_acquisition_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionMode'))
+            if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
+                print('Unable to set acquisition mode to continuous (enum retrieval). Aborting...')
+            # Retrieve entry node from enumeration node
+            node_acquisition_mode_continuous = node_acquisition_mode.GetEntryByName('Continuous')
+            if not PySpin.IsAvailable(node_acquisition_mode_continuous) or not PySpin.IsReadable(node_acquisition_mode_continuous):
+                ('Unable to set acquisition mode to continuous (entry retrieval). Aborting...')
             self.cam.BeginAcquisition()
-              
+            # Retrieve integer value from entry node
+            acquisition_mode_continuous = node_acquisition_mode_continuous.GetValue()
+            # Set integer value from entry node as new value of enumeration node
+            node_acquisition_mode.SetIntValue(acquisition_mode_continuous)
 
         except:
-            print("Error.")       
+            print("Cannot set mode.")       
         #--------------------------------------------------#
         self.timer.start(100)  # Update every 30 milliseconds
 
@@ -102,14 +110,13 @@ class CameraGUI(QWidget):
             self.result_label.setPixmap(pixmap.scaled(self.result_label.size(), Qt.KeepAspectRatio))
 
     def close_event(self):
-        
         self.cam.EndAcquisition()
         # Deinitialize camera
         self.cam.DeInit()
         del self.cam
         self.cam_list.Clear()
         self.system.ReleaseInstance()
-        sys.exit(app.exec_())
+        sys.exit()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
