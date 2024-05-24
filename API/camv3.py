@@ -13,7 +13,8 @@ class CameraGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Camera Capture & Object Detection")
-        
+        self.resize(1300,700)
+
         # UI Elements
         self.camera_label = QLabel("Camera Feed")
         self.camera_label.setAlignment(Qt.AlignCenter)
@@ -24,9 +25,10 @@ class CameraGUI(QWidget):
         self.result_label = QLabel("Detection Result")
         self.result_label.setAlignment(Qt.AlignCenter)
 
-        self.image_label = QLabel(self)
-        self.text_label = QLabel('Prediction: ', self)
-        self.classsify_button = QPushButton('Classify', self)
+        # self.image_label = QLabel("Text label")
+        self.text_label = QLabel('Prediction: ')
+        self.text_label.setAlignment(Qt.AlignCenter)
+        self.classsify_button = QPushButton('Classify')
         self.classsify_button.clicked.connect(self.classify_result)
 
         # Layout
@@ -34,7 +36,6 @@ class CameraGUI(QWidget):
         layout.addWidget(self.camera_label)
         layout.addWidget(self.detect_button)
         layout.addWidget(self.result_label)
-        layout.addWidget(self.image_label)
         layout.addWidget(self.text_label)
         layout.addWidget(self.classsify_button)
 
@@ -42,6 +43,8 @@ class CameraGUI(QWidget):
 
 
         # Camera Setup
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_frame)
         # self.cap = cv2.VideoCapture(0)  # 0 for default camera
         #--------------------------------------------------#
 
@@ -50,62 +53,46 @@ class CameraGUI(QWidget):
 
         # Retrieve list of cameras from the system
         self.cam_list = self.system.GetCameras()
-        print(self.cam_list)
+
         for i, self.cam in enumerate(self.cam_list):
             self.cam.Init()
             self.nodemap = self.cam.GetNodeMap()
-        try:  
-            node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
-            if not PySpin.IsAvailable(node_pixel_format) or not PySpin.IsWritable(node_pixel_format):
-                print('Pixel Format not available')
-            # Retrieve entry node from enumeration node
-            node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
-            if not PySpin.IsAvailable(node_pixel_format_RGB) or not PySpin.IsReadable(node_pixel_format_RGB):
-                ('Unable to set pixel format mode')
-            # Retrieve integer value from entry node
-            pixel_format = node_pixel_format_RGB.GetValue()
-            # Set integer value from entry node as new value of enumeration node
-            node_pixel_format.SetIntValue(pixel_format)
+            try:  
+                node_jumbo_package = PySpin.CIntegerPtr(self.nodemap.GetNode('GevSCPSPacketSize'))
+                node_jumbo_package.SetValue(9000)
 
+                node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
+                node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
+                node_pixel_format.SetIntValue(node_pixel_format_RGB.GetValue())
 
-            node_acquisition_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionMode'))
-            if not PySpin.IsAvailable(node_acquisition_mode) or not PySpin.IsWritable(node_acquisition_mode):
-                print('Unable to set acquisition mode to continuous (enum retrieval). Aborting...')
-            # Retrieve entry node from enumeration node
-            node_acquisition_mode_continuous = node_acquisition_mode.GetEntryByName('Continuous')
-            if not PySpin.IsAvailable(node_acquisition_mode_continuous) or not PySpin.IsReadable(node_acquisition_mode_continuous):
-                ('Unable to set acquisition mode to continuous (entry retrieval). Aborting...')
-            self.cam.BeginAcquisition()
-            # Retrieve integer value from entry node
-            acquisition_mode_continuous = node_acquisition_mode_continuous.GetValue()
-            # Set integer value from entry node as new value of enumeration node
-            node_acquisition_mode.SetIntValue(acquisition_mode_continuous)
-
-        except:
-            print("Cannot set mode.")       
+                node_acquisition_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionMode'))
+                node_acquisition_mode_continuous = node_acquisition_mode.GetEntryByName('Continuous')
+                node_acquisition_mode.SetIntValue(node_acquisition_mode_continuous.GetValue())
+            except:
+                print("Cannot set mode.")   
+            self.cam.BeginAcquisition()    
         #--------------------------------------------------#
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_frame)
         self.timer.start(100)  # Update every 30 milliseconds
 
     def update_frame(self):
         # ret, frame = self.cap.read()
         #Read camera
-        frame = self.cam.GetNextImage(1000)
-        frame_data = frame.GetNDArray()
+        display_frame = self.cam.GetNextImage(1000)
+        display_frame_data = display_frame.GetNDArray()
 
-        color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+        # color_image = cv2.cvtColor(display_frame_data, cv2.COLOR_BGR2RGB)
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
-        Qt_format = QImage(color_image, 1600, 1200, 4800, QImage.Format_RGB888)
-        self.camera_label.setPixmap(Qt_format.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
+        Qt_format = QImage(display_frame_data, 1600, 1200, QImage.Format_RGB888)
+        pixmap_format = QPixmap.fromImage(Qt_format)
+        self.camera_label.setPixmap(pixmap_format.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
 
     def detect_result(self):
-        frame = self.cam.GetNextImage(1000)
-        frame_data = frame.GetNDArray()
-        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+        detect_frame = self.cam.GetNextImage(1000)
+        detect_frame_data = detect_frame.GetNDArray()
+        # detect_frame_data_color = cv2.cvtColor(detect_frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', frame_data)
-        response = requests.post('http://192.168.0.102:5000/detect', data=img_encoded.tobytes())
+        _, img_encoded = cv2.imencode('.jpg', detect_frame_data)
+        response = requests.post('http://192.168.0.101:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
@@ -113,12 +100,12 @@ class CameraGUI(QWidget):
             self.result_label.setPixmap(pixmap.scaled(self.result_label.size(), Qt.KeepAspectRatio))
 
     def classify_result(self):
-        frame = self.cam.GetNextImage(1000)
-        frame_data = frame.GetNDArray()
+        classify_frame = self.cam.GetNextImage(1000)
+        classify_frame_data = classify_frame.GetNDArray()
         # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', frame_data)
-        response = requests.post('http://localhost:5000/classify', files={'file': img_encoded.tobytes()})
+        _, img_encoded = cv2.imencode('.jpg', classify_frame_data)
+        response = requests.post('http://192.168.0.101:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             prediction = response.json().get('prediction', 'Error')
             self.text_label.setText(f'Prediction: {prediction}')
