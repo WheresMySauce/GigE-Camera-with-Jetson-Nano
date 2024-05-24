@@ -34,7 +34,8 @@ classify_model = ResNet50V2(
 def detect():
     nparr = np.frombuffer(request.data, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    print(img.shape)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # print(img.shape)
     results = detect_model(img)
     res_plotted = results[0].plot() 
     _, img_encoded = cv2.imencode('.jpg', res_plotted)
@@ -54,14 +55,15 @@ def classify():
     nparr = np.frombuffer(file.read(), np.uint8)
     # Convert numpy array to image
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # Resize and preprocess image
     img_resized = cv2.resize(img, (224, 224))
 
-    cv2.imwrite("saved_img", img_resized)
+    cv2.imwrite("saved_img.jpg", img_resized)
     img_array = np.expand_dims(img_resized, axis=0)
     img_array = preprocess_input(img_array)
     
-    # Predict
+    # Predictx
     predictions = classify_model.predict(img_array)
     decoded_predictions = decode_predictions(predictions, top=1)[0]
     prediction = decoded_predictions[0][1]  # Get the label of the top prediction
