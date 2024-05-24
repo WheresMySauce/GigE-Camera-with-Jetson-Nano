@@ -7,13 +7,13 @@ import cv2
 import requests
 
 import PySpin
-os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+# os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
 class CameraGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Camera Capture & Object Detection")
-        self.resize(800, 600)
+        self.resize(1000, 800)
         
         # UI Elements
         self.camera_label = QLabel("Camera Feed")
@@ -24,9 +24,6 @@ class CameraGUI(QWidget):
 
         self.result_label = QLabel("Detection Result")
         self.result_label.setAlignment(Qt.AlignCenter)
-
-        self.close_button = QPushButton("Close Application")
-        self.close_button.clicked.connect(self.close_event)
 
         # Layout
         layout = QVBoxLayout()
@@ -45,18 +42,19 @@ class CameraGUI(QWidget):
 
         # Retrieve singleton reference to system object
         self.system = PySpin.System.GetInstance()
+
         # Retrieve list of cameras from the system
         self.cam_list = self.system.GetCameras()
-        self.num_cameras = self.cam_list.GetSize()
-        for i, cam in enumerate(self.cam_list):
-            self.cam = cam.Init()
+        print(self.cam_list)
+        for i, self.cam in enumerate(self.cam_list):
+            self.cam.Init()
             self.nodemap = self.cam.GetNodeMap()
         try:  
             node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
             if not PySpin.IsAvailable(node_pixel_format) or not PySpin.IsWritable(node_pixel_format):
                 print('Pixel Format not available')
             # Retrieve entry node from enumeration node
-            node_pixel_format_RGB = node_pixel_format.GetEntryByName('BayerRG8')
+            node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
             if not PySpin.IsAvailable(node_pixel_format_RGB) or not PySpin.IsReadable(node_pixel_format_RGB):
                 ('Unable to set pixel format mode')
             # Retrieve integer value from entry node
@@ -88,35 +86,35 @@ class CameraGUI(QWidget):
         #Read camera
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        print(frame_data.shape)
 
-        img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        img = QImage(frame_data, frame_data.shape[1], frame_data.shape[0], QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(img)
         self.camera_label.setPixmap(pixmap.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
-
-        frame.Release()
+        # frame.Release()
     def capture_and_send(self):
         # ret, frame = self.cap.read()
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        frame = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
+        color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', frame)
-        response = requests.post('http://127.0.0.1:5000/detect', data=img_encoded.tobytes())
+        _, img_encoded = cv2.imencode('.jpg', color_image)
+        response = requests.post('http://192.168.0.102:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
             self.result_label.setPixmap(pixmap.scaled(self.result_label.size(), Qt.KeepAspectRatio))
 
-    def close_event(self):
+    def closeEvent(self, event):
         self.cam.EndAcquisition()
         # Deinitialize camera
         self.cam.DeInit()
         del self.cam
         self.cam_list.Clear()
         self.system.ReleaseInstance()
-        sys.exit()
+        event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
