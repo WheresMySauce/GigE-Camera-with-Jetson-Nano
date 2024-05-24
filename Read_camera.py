@@ -146,7 +146,7 @@ def acquire_and_display_images(cam, nodemap, nodemap_tldevice):
                 else:
                     image_data = image_result.GetNDArray()
                     color_image = cv2.cvtColor(image_data, cv2.COLOR_BayerRG2RGB)
-                    color_image = cv2.resize(color_image, (1200, 1600))
+                    # color_image = cv2.resize(color_image, (1200, 1600))
                     # image_byarr = image_result.GetData()
                     # np_array = np.array(image_byarr, dtype=np.uint8)
                     # image = np_array.reshape(1200, 1600)
