@@ -13,30 +13,35 @@ class CameraGUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Camera Capture & Object Detection")
-        self.resize(1000, 800)
         
         # UI Elements
         self.camera_label = QLabel("Camera Feed")
         self.camera_label.setAlignment(Qt.AlignCenter)
 
-        self.capture_button = QPushButton("Capture & Detect")
-        self.capture_button.clicked.connect(self.capture_and_send)
+        self.detect_button = QPushButton("Detect")
+        self.detect_button.clicked.connect(self.detect_result)
 
         self.result_label = QLabel("Detection Result")
         self.result_label.setAlignment(Qt.AlignCenter)
 
+        self.image_label = QLabel(self)
+        self.text_label = QLabel('Prediction: ', self)
+        self.classsify_button = QPushButton('Classify', self)
+        self.classsify_button.clicked.connect(self.classify_result)
+
         # Layout
         layout = QVBoxLayout()
         layout.addWidget(self.camera_label)
-        layout.addWidget(self.capture_button)
+        layout.addWidget(self.detect_button)
         layout.addWidget(self.result_label)
-        layout.addWidget(self.close_button)
+        layout.addWidget(self.image_label)
+        layout.addWidget(self.text_label)
+        layout.addWidget(self.classsify_button)
 
         self.setLayout(layout)
 
+
         # Camera Setup
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_frame)
         # self.cap = cv2.VideoCapture(0)  # 0 for default camera
         #--------------------------------------------------#
 
@@ -79,6 +84,8 @@ class CameraGUI(QWidget):
         except:
             print("Cannot set mode.")       
         #--------------------------------------------------#
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_frame)
         self.timer.start(100)  # Update every 30 milliseconds
 
     def update_frame(self):
@@ -86,26 +93,35 @@ class CameraGUI(QWidget):
         #Read camera
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        print(frame_data.shape)
 
-        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BayerRG2RGB)
-        img = QImage(frame_data, frame_data.shape[1], frame_data.shape[0], QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(img)
-        self.camera_label.setPixmap(pixmap.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
-        # frame.Release()
-    def capture_and_send(self):
-        # ret, frame = self.cap.read()
+        color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+        # h = 1200, w = 1600, ch = 3, byte per line = ch*w
+        Qt_format = QImage(color_image, 1600, 1200, 4800, QImage.Format_RGB888)
+        self.camera_label.setPixmap(Qt_format.scaled(self.camera_label.size(), Qt.KeepAspectRatio))
+
+    def detect_result(self):
         frame = self.cam.GetNextImage(1000)
         frame_data = frame.GetNDArray()
-        color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', color_image)
+        _, img_encoded = cv2.imencode('.jpg', frame_data)
         response = requests.post('http://192.168.0.102:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
             self.result_label.setPixmap(pixmap.scaled(self.result_label.size(), Qt.KeepAspectRatio))
+
+    def classify_result(self):
+        frame = self.cam.GetNextImage(1000)
+        frame_data = frame.GetNDArray()
+        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
+
+        _, img_encoded = cv2.imencode('.jpg', frame_data)
+        response = requests.post('http://localhost:5000/classify', files={'file': img_encoded.tobytes()})
+        if response.status_code == 200:
+            prediction = response.json().get('prediction', 'Error')
+            self.text_label.setText(f'Prediction: {prediction}')
 
     def closeEvent(self, event):
         self.cam.EndAcquisition()
