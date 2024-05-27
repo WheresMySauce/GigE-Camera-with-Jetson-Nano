@@ -199,10 +199,10 @@ class Ui_MainWindow(object):
         # self.ERROR4.setFont(font)
 
         # The capture button
-        # self.CAPTURE = QPushButton(self.centralwidget)
-        # self.CAPTURE.setObjectName(u"CAPTURE")
-        # self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
-        # self.CAPTURE.setFont(font)
+        self.CAPTURE = QPushButton(self.centralwidget)
+        self.CAPTURE.setObjectName(u"CAPTURE")
+        self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
+        self.CAPTURE.setFont(font)
 
         #--------------------------------------------------#
         # Retrieve singleton reference to system object
@@ -284,24 +284,31 @@ class Ui_MainWindow(object):
         self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.IgnoreAspectRatio))
 
     def detect_result(self):
-        detect_frame = self.cam.GetNextImage(1000)
-        detect_frame_data = detect_frame.GetNDArray()
+        # detect_frame = self.cam.GetNextImage(1000)
+        # detect_frame_data = detect_frame.GetNDArray()
         # detect_frame_data_color = cv2.cvtColor(detect_frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', detect_frame_data)
+        _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post('http://192.168.1.121:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
             self.image.setPixmap(pixmap.scaled(self.image.size(), Qt.IgnoreAspectRatio))
+      
+    def capture_and_display(self):
+        capture_frame = self.cam.GetNextImage(1000)
+        self.capture_frame_data = capture_frame.GetNDArray()
+        capture_Qt_format = QImage(self.capture_frame_data, 1600, 1200, QImage.Format_RGB888)
+        capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
+        self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.IgnoreAspectRatio))
 
     def classify_result(self):
-        classify_frame = self.cam.GetNextImage(1000)
-        classify_frame_data = classify_frame.GetNDArray()
+        # classify_frame = self.cam.GetNextImage(1000)
+        # classify_frame_data = classify_frame.GetNDArray()
         # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
-        _, img_encoded = cv2.imencode('.jpg', classify_frame_data)
+        _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post('http://192.168.1.121:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             prediction = response.json().get('prediction', 'Error')
