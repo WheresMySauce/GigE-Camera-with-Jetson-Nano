@@ -203,6 +203,7 @@ class Ui_MainWindow(object):
         self.CAPTURE.setObjectName(u"CAPTURE")
         self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
         self.CAPTURE.setFont(font)
+        self.CAPTURE.clicked.connect(self.capture_and_display)
 
         #--------------------------------------------------#
         # Retrieve singleton reference to system object
@@ -269,7 +270,7 @@ class Ui_MainWindow(object):
         # self.ERROR2.setText(QCoreApplication.translate("MainWindow", u"ERROR2", None))
         # self.ERROR3.setText(QCoreApplication.translate("MainWindow", u"ERROR3", None))
         # self.ERROR4.setText(QCoreApplication.translate("MainWindow", u"ERROR4", None))
-        # self.CAPTURE.setText(QCoreApplication.translate("MainWindow", u"CAPTURE", None))
+        self.CAPTURE.setText(QCoreApplication.translate("MainWindow", u"CAPTURE", None))
     
     def update_frame(self):
         # ret, frame = self.cap.read()
