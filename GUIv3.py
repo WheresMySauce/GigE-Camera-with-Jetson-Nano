@@ -229,7 +229,7 @@ class Ui_MainWindow(object):
 
         #--------------------------------------------------#
         # Set timer for update frame:
-        self.timer = QTimer(self)
+        self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(100)
 
@@ -279,9 +279,9 @@ class Ui_MainWindow(object):
 
         # color_image = cv2.cvtColor(display_frame_data, cv2.COLOR_BGR2RGB)
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
-        Qt_format = QImage(display_frame_data, 1200, 1600, QImage.Format_RGB888)
+        Qt_format = QImage(display_frame_data, 1600, 1200, QImage.Format_RGB888)
         pixmap_format = QPixmap.fromImage(Qt_format)
-        self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.InoreAspectRatio))
+        self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.IgnoreAspectRatio))
 
     def detect_result(self):
         detect_frame = self.cam.GetNextImage(1000)
@@ -289,7 +289,7 @@ class Ui_MainWindow(object):
         # detect_frame_data_color = cv2.cvtColor(detect_frame_data, cv2.COLOR_BGR2RGB)
 
         _, img_encoded = cv2.imencode('.jpg', detect_frame_data)
-        response = requests.post('http://192.168.0.101:5000/detect', data=img_encoded.tobytes())
+        response = requests.post('http://192.168.1.121:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             img_bytes = response.content
             pixmap = QPixmap()
@@ -302,7 +302,7 @@ class Ui_MainWindow(object):
         # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
 
         _, img_encoded = cv2.imencode('.jpg', classify_frame_data)
-        response = requests.post('http://192.168.0.101:5000/classify', files={'file': img_encoded.tobytes()})
+        response = requests.post('http://192.168.1.121:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             prediction = response.json().get('prediction', 'Error')
             self.label.setText(f'{prediction}')
