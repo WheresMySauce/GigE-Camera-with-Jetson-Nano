@@ -214,8 +214,25 @@ class Ui_MainWindow(object):
             self.cam.Init()
             self.nodemap = self.cam.GetNodeMap()
             try:  
+                # Width = 744
+                # Height = 300
+                # Offset X = 330
+                # Offset Y = 330
+
                 node_jumbo_package = PySpin.CIntegerPtr(self.nodemap.GetNode('GevSCPSPacketSize'))
                 node_jumbo_package.SetValue(9000)
+
+                node_width = PySpin.CIntegerPtr(self.nodemap.GetNode('Width'))
+                node_width.SetValue(744)
+
+                node_height = PySpin.CIntegerPtr(self.nodemap.GetNode('Height'))
+                node_height.SetValue(300)
+
+                node_offsetX = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetX'))
+                node_offsetX.SetValue(330)
+
+                node_offsetY = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetY'))
+                node_offsetY.SetValue(330)
 
                 node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
                 node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
