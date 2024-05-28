@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
 
         self.label_2 = QLabel(self.centralwidget)
         self.label_2.setObjectName(u"label_2")
-        self.label_2.setGeometry(QRect(100, 580, 60, 30))
+        self.label_2.setGeometry(QRect(100, 580, 500, 30))
         self.label_2.setFont(font)
         self.label_error_2 = QLabel(self.centralwidget)
         self.label_error_2.setObjectName(u"label_error_2")
@@ -294,7 +294,7 @@ class Ui_MainWindow(object):
         display_frame = self.cam.GetNextImage(1000)
         display_frame_data = display_frame.GetNDArray()
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
-        Qt_format = QImage(display_frame_data, 1600, 1200, QImage.Format_RGB888)
+        Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
         pixmap_format = QPixmap.fromImage(Qt_format)
         self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.IgnoreAspectRatio))
 
@@ -313,7 +313,7 @@ class Ui_MainWindow(object):
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
-        capture_Qt_format = QImage(self.capture_frame_data, 1600, 1200, QImage.Format_RGB888)
+        capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
         self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.IgnoreAspectRatio))
 
