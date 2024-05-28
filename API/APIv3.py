@@ -8,23 +8,17 @@ import tensorflow as tf
 from tensorflow.keras.applications.resnet_v2 import ResNet50V2, preprocess_input, decode_predictions
 
 
+
 app = Flask(__name__)
 #------------------------------------------------------------------------------------------------------#
 ### Define model
 
 # Load your YOLOv8 model
-detect_model = YOLO('yolov8n.pt')  
+detect_model = YOLO('best.pt')  
 
 # Load the pre-trained ResNet50V2 model
-classify_model = ResNet50V2(
-    include_top=True,
-    weights="imagenet",
-    input_tensor=None,
-    input_shape=None,
-    pooling=None,
-    classes=1000,
-    classifier_activation="softmax",
-)
+classify_model = tf.keras.models.load_model('resnet_ABC.keras')
+class_names = ['AB','C','D']
 
 #------------------------------------------------------------------------------------------------------#
 
@@ -65,11 +59,12 @@ def classify():
     
     # Predictx
     predictions = classify_model.predict(img_array)
-    decoded_predictions = decode_predictions(predictions, top=1)[0]
-    prediction = decoded_predictions[0][1]  # Get the label of the top prediction
+    # decoded_predictions = decode_predictions(predictions, top=1)[0]
+    # prediction = decoded_predictions[0][1]  # Get the label of the top prediction
+    class_id = np.argmax(predictions, axis = 1)
+    class_name = class_names[class_id.item()]
 
-    return jsonify({'prediction': prediction})
-
+    return jsonify({'prediction': class_name})
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0") 

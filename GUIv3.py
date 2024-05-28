@@ -263,8 +263,8 @@ class Ui_MainWindow(object):
         
         self.label_class.setText(QCoreApplication.translate("MainWindow", u"Class:", None))
         self.label_error.setText(QCoreApplication.translate("MainWindow", u"Defects:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"test", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"test", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
         # self.ERROR1.setText(QCoreApplication.translate("MainWindow", u"ERROR1", None))
         # self.ERROR2.setText(QCoreApplication.translate("MainWindow", u"ERROR2", None))
         # self.ERROR3.setText(QCoreApplication.translate("MainWindow", u"ERROR3", None))
@@ -272,22 +272,18 @@ class Ui_MainWindow(object):
         # self.CAPTURE.setText(QCoreApplication.translate("MainWindow", u"CAPTURE", None))
     
     def update_frame(self):
-        # ret, frame = self.cap.read()
         #Read camera
         display_frame = self.cam.GetNextImage(1000)
         display_frame_data = display_frame.GetNDArray()
-
-        # color_image = cv2.cvtColor(display_frame_data, cv2.COLOR_BGR2RGB)
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
         Qt_format = QImage(display_frame_data, 1600, 1200, QImage.Format_RGB888)
         pixmap_format = QPixmap.fromImage(Qt_format)
         self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.IgnoreAspectRatio))
 
     def detect_result(self):
-        # detect_frame = self.cam.GetNextImage(1000)
-        # detect_frame_data = detect_frame.GetNDArray()
-        # detect_frame_data_color = cv2.cvtColor(detect_frame_data, cv2.COLOR_BGR2RGB)
-
+        if self.prediction == "C" or self.prediction == "D":
+            self.label_2.setText(QCoreApplication.translate("MainWindow", u"Class C and D does not have to detect defects", None))
+            return
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post('http://192.168.1.121:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
@@ -295,7 +291,7 @@ class Ui_MainWindow(object):
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
             self.image.setPixmap(pixmap.scaled(self.image.size(), Qt.IgnoreAspectRatio))
-      
+
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
@@ -304,15 +300,11 @@ class Ui_MainWindow(object):
         self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.IgnoreAspectRatio))
 
     def classify_result(self):
-        # classify_frame = self.cam.GetNextImage(1000)
-        # classify_frame_data = classify_frame.GetNDArray()
-        # color_image = cv2.cvtColor(frame_data, cv2.COLOR_BGR2RGB)
-
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post('http://192.168.1.121:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
-            prediction = response.json().get('prediction', 'Error')
-            self.label.setText(f'{prediction}')
+            self.prediction = response.json().get('prediction', 'Error')
+            self.label.setText(f'{self.prediction}')
 
     def closeEvent(self, event):
         self.cam.EndAcquisition()
