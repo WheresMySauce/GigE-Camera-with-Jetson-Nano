@@ -116,41 +116,41 @@ class Ui_MainWindow(object):
         self.Defect_detecton.clicked.connect(self.detect_result)
 
         # Save file button
-        self.Save_file = QPushButton(self.centralwidget)
-        self.Save_file.setObjectName(u"Save_file")
-        self.Save_file.setGeometry(QRect(1120, 490, 241, 61))
-        self.Save_file.setFont(font)
+        # self.Save_file = QPushButton(self.centralwidget)
+        # self.Save_file.setObjectName(u"Save_file")
+        # self.Save_file.setGeometry(QRect(1120, 490, 241, 61))
+        # self.Save_file.setFont(font)
 
         # Show saved file button
-        self.file_saved = QPushButton(self.centralwidget)
-        self.file_saved.setObjectName(u"file_saved")
-        self.file_saved.setGeometry(QRect(1120, 560, 241, 61))
-        self.file_saved.setFont(font)
+        # self.file_saved = QPushButton(self.centralwidget)
+        # self.file_saved.setObjectName(u"file_saved")
+        # self.file_saved.setGeometry(QRect(1120, 560, 241, 61))
+        # self.file_saved.setFont(font)
 
         # Input for name and ID
-        self.name = QLineEdit(self.centralwidget)
-        self.name.setObjectName(u"name")
-        self.name.setGeometry(QRect(100, 30, 271, 41))
-        self.name.setFont(font)
-        self.mssv = QLineEdit(self.centralwidget)
-        self.mssv.setObjectName(u"mssv")
-        self.mssv.setGeometry(QRect(510, 30, 271, 41))
-        self.mssv.setFont(font)
-        self.label_name = QLabel(self.centralwidget)
-        self.label_name.setObjectName(u"label_name")
-        self.label_name.setGeometry(QRect(10, 40, 81, 21))
-        self.label_name.setFont(font)
-        self.label_mssv = QLabel(self.centralwidget)
-        self.label_mssv.setObjectName(u"label_mssv")
-        self.label_mssv.setGeometry(QRect(420, 40, 81, 21))
-        self.label_mssv.setFont(font)
+        # self.name = QLineEdit(self.centralwidget)
+        # self.name.setObjectName(u"name")
+        # self.name.setGeometry(QRect(100, 30, 271, 41))
+        # self.name.setFont(font)
+        # self.mssv = QLineEdit(self.centralwidget)
+        # self.mssv.setObjectName(u"mssv")
+        # self.mssv.setGeometry(QRect(510, 30, 271, 41))
+        # self.mssv.setFont(font)
+        # self.label_name = QLabel(self.centralwidget)
+        # self.label_name.setObjectName(u"label_name")
+        # self.label_name.setGeometry(QRect(10, 40, 81, 21))
+        # self.label_name.setFont(font)
+        # self.label_mssv = QLabel(self.centralwidget)
+        # self.label_mssv.setObjectName(u"label_mssv")
+        # self.label_mssv.setGeometry(QRect(420, 40, 81, 21))
+        # self.label_mssv.setFont(font)
 
         # Submit button
-        self.pushButton_submit = QPushButton(self.centralwidget)
-        self.pushButton_submit.setObjectName(u"pushButton_submit")
-        self.pushButton_submit.setGeometry(QRect(840, 20, 211, 61))
+        # self.pushButton_submit = QPushButton(self.centralwidget)
+        # self.pushButton_submit.setObjectName(u"pushButton_submit")
+        # self.pushButton_submit.setGeometry(QRect(840, 20, 211, 61))
 
-        self.pushButton_submit.setFont(font)
+        # self.pushButton_submit.setFont(font)
 
         # Test result for label
         self.label_class = QLabel(self.centralwidget)
@@ -272,11 +272,11 @@ class Ui_MainWindow(object):
 
         self.Classification.setText(QCoreApplication.translate("MainWindow", u"Classify", None))
         self.Defect_detecton.setText(QCoreApplication.translate("MainWindow", u"Detect Defect", None))
-        self.Save_file.setText(QCoreApplication.translate("MainWindow", u"Save file", None))
-        self.file_saved.setText(QCoreApplication.translate("MainWindow", u"Open saved file", None))
-        self.label_name.setText(QCoreApplication.translate("MainWindow", u"NAME:", None))
-        self.label_mssv.setText(QCoreApplication.translate("MainWindow", u"MSSV:", None))
-        self.pushButton_submit.setText(QCoreApplication.translate("MainWindow", u"Submit", None))
+        # self.Save_file.setText(QCoreApplication.translate("MainWindow", u"Save file", None))
+        # self.file_saved.setText(QCoreApplication.translate("MainWindow", u"Open saved file", None))
+        # self.label_name.setText(QCoreApplication.translate("MainWindow", u"NAME:", None))
+        # self.label_mssv.setText(QCoreApplication.translate("MainWindow", u"MSSV:", None))
+        # self.pushButton_submit.setText(QCoreApplication.translate("MainWindow", u"Submit", None))
 
         
         self.label_class.setText(QCoreApplication.translate("MainWindow", u"Class:", None))
@@ -296,7 +296,7 @@ class Ui_MainWindow(object):
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
         Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
         pixmap_format = QPixmap.fromImage(Qt_format)
-        self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.IgnoreAspectRatio))
+        self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.KeepAspectRatio))
 
     def detect_result(self):
         if self.prediction == "C" or self.prediction == "D":
@@ -308,14 +308,14 @@ class Ui_MainWindow(object):
             img_bytes = response.content
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
-            self.image.setPixmap(pixmap.scaled(self.image.size(), Qt.IgnoreAspectRatio))
+            self.image.setPixmap(pixmap.scaled(self.image.size(), Qt.KeepAspectRatio))
 
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
         capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
-        self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.IgnoreAspectRatio))
+        self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.KeepAspectRatio))
 
     def classify_result(self):
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
