@@ -229,10 +229,10 @@ class Ui_MainWindow(object):
                 node_height.SetValue(300)
 
                 node_offsetX = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetX'))
-                node_offsetX.SetValue(330)
+                node_offsetX.SetValue(380)
 
                 node_offsetY = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetY'))
-                node_offsetY.SetValue(330)
+                node_offsetY.SetValue(384)
 
                 node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
                 node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
