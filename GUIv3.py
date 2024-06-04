@@ -7,6 +7,9 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+# Jetson nano pinouts
+import Jetson.GPIO as GPIO
+
 # Image processing
 import cv2
 import requests
@@ -16,6 +19,7 @@ import PySpin
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow): #setupUi i.e fonts, location,....
+        self.CAMERA_STATE = True
 
         # Window initialize
         if not MainWindow.objectName():
@@ -27,11 +31,15 @@ class Ui_MainWindow(object):
         
         # Set up fonts
         font = QFont()
-        font.setFamily(u"Times New Roman")
+        font.setFamily(u"Arial")
         font.setPointSize(16)
 
+        small_font = QFont()
+        small_font.setFamily(u"Arial")
+        small_font.setPointSize(10)
+
         bold_font = QFont()
-        bold_font.setFamily(u"Times New Roman")
+        bold_font.setFamily(u"Arial")
         bold_font.setPointSize(16)
         bold_font.setBold(True)
         bold_font.setWeight(75)
@@ -45,6 +53,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.line.sizePolicy().hasHeightForWidth())
         self.line.setSizePolicy(sizePolicy)
+
         self.line.setFont(font)
         self.line.setMouseTracking(False)
         self.line.setTabletTracking(True)
@@ -68,52 +77,121 @@ class Ui_MainWindow(object):
         self.line_3.setFrameShadow(QFrame.Plain)
         self.line_3.setLineWidth(3)
         self.line_3.setFrameShape(QFrame.HLine)
+
+        self.line_4 = QFrame(self.centralwidget)
+        self.line_4.setObjectName(u"line_4")
+        self.line_4.setGeometry(QRect(1110, 240, 1110, 20))
+        self.line_4.setFont(font)
+        self.line_4.setFrameShadow(QFrame.Plain)
+        self.line_4.setLineWidth(3)
+        self.line_4.setFrameShape(QFrame.HLine)
         
         # Camera feed
-        self.CAMERA = QLabel(self.centralwidget)
-        self.CAMERA.setObjectName(u"Camera Feed")
-        self.CAMERA.setGeometry(QRect(20, 160, 500, 248))
-        self.CAMERA.setFont(font)
-        self.CAMERA.setFrameShape(QFrame.Box)
-        # self.CAMERA.setPixmap(QPixmap(u"data/5.PNG"))
+        self.camera_feed = QLabel(self.centralwidget)
+        self.camera_feed.setObjectName(u"Camera Feed")
+        self.camera_feed.setGeometry(QRect(20, 160, 500, 248))
+        self.camera_feed.setFont(font)
+        self.camera_feed.setFrameShape(QFrame.Box)
+        # self.camera_feed.setPixmap(QPixmap(u"data/5.PNG"))
 
         # Result image
-        self.image = QLabel(self.centralwidget)
-        self.image.setObjectName(u"Result image")
-        self.image.setGeometry(QRect(590, 160, 500, 248))
-        self.image.setFont(font)
-        self.image.setFrameShape(QFrame.Box)
-        # self.image.setPixmap(QPixmap(u"data/4.PNG"))
+        self.image_feed = QLabel(self.centralwidget)
+        self.image_feed.setObjectName(u"Result image")
+        self.image_feed.setGeometry(QRect(590, 160, 500, 248))
+        self.image_feed.setFont(font)
+        self.image_feed.setFrameShape(QFrame.Box)
+        # self.image_feed.setPixmap(QPixmap(u"data/4.PNG"))
 
         # Camera feed label
-        self.label_camera = QLabel(self.centralwidget)
-        self.label_camera.setObjectName(u"label_camera")
-        self.label_camera.setGeometry(QRect(190, 430, 121, 51))
-        self.label_camera.setFont(bold_font)
-        self.label_camera.setTextFormat(Qt.AutoText)
-        self.label_camera.setAlignment(Qt.AlignCenter)
+        self.camera_feed_label = QLabel(self.centralwidget)
+        self.camera_feed_label.setObjectName(u"Camera Feed Label")
+        self.camera_feed_label.setGeometry(QRect(190, 430, 121, 51))
+        self.camera_feed_label.setFont(bold_font)
+        self.camera_feed_label.setTextFormat(Qt.AutoText)
+        self.camera_feed_label.setAlignment(Qt.AlignCenter)
 
         # Result image label
-        self.label_image_result = QLabel(self.centralwidget)
-        self.label_image_result.setObjectName(u"label_image_result")
-        self.label_image_result.setGeometry(QRect(750, 430, 181, 51))
-        self.label_image_result.setFont(bold_font)
-        self.label_image_result.setLayoutDirection(Qt.LeftToRight)
-        self.label_image_result.setAlignment(Qt.AlignCenter)
+        self.image_feed_label = QLabel(self.centralwidget)
+        self.image_feed_label.setObjectName(u"Image Feed Label")
+        self.image_feed_label.setGeometry(QRect(750, 430, 181, 51))
+        self.image_feed_label.setFont(bold_font)
+        self.image_feed_label.setLayoutDirection(Qt.LeftToRight)
+        self.image_feed_label.setAlignment(Qt.AlignCenter)
 
         # Send image to classify button
-        self.Classification = QPushButton(self.centralwidget)
-        self.Classification.setObjectName(u"Classification")
-        self.Classification.setGeometry(QRect(1120, 350, 241, 61))
-        self.Classification.setFont(font)
-        self.Classification.clicked.connect(self.classify_result)
+        self.classify_button = QPushButton(self.centralwidget)
+        self.classify_button.setObjectName(u"Classify")
+        self.classify_button.setGeometry(QRect(1120, 350, 241, 61))
+        self.classify_button.setFont(font)
+        self.classify_button.clicked.connect(self.classify)
 
         # Send image to detect defects button
-        self.Defect_detecton = QPushButton(self.centralwidget)
-        self.Defect_detecton.setObjectName(u"Defect_detecton")
-        self.Defect_detecton.setGeometry(QRect(1120, 420, 241, 61))
-        self.Defect_detecton.setFont(font)
-        self.Defect_detecton.clicked.connect(self.detect_result)
+        self.detect_button = QPushButton(self.centralwidget)
+        self.detect_button.setObjectName(u"Detect")
+        self.detect_button.setGeometry(QRect(1120, 420, 241, 61))
+        self.detect_button.setFont(font)
+        self.detect_button.clicked.connect(self.detect)
+
+        # Test result for label
+        self.classify_result_section = QLabel(self.centralwidget)
+        self.classify_result_section.setObjectName(u"Classify Section")
+        self.classify_result_section.setGeometry(QRect(20, 530, 60, 30))
+        self.classify_result_section.setFont(font)
+
+        self.classify_result_text = QLabel(self.centralwidget)
+        self.classify_result_text.setObjectName(u"Classify Text")
+        self.classify_result_text.setGeometry(QRect(100, 530, 491, 30))
+        self.classify_result_text.setFont(font)
+
+        self.detect_result_section = QLabel(self.centralwidget)
+        self.detect_result_section.setObjectName(u"Detect Section")
+        self.detect_result_section.setGeometry(QRect(20, 580, 60, 30))
+        self.detect_result_section.setFont(font)
+
+        self.detect_result_text = QLabel(self.centralwidget)
+        self.detect_result_text.setObjectName(u"Detect Text")
+        self.detect_result_text.setGeometry(QRect(100, 580, 500, 30))
+        self.detect_result_text.setFont(font)
+
+        # The trigger button
+        self.trigger_camera = QPushButton(self.centralwidget)
+        self.trigger_camera.setObjectName(u"Camera On/Off")
+        self.trigger_camera.setGeometry(QRect(1160, 60, 160, 40))
+        self.trigger_camera.setFont(font)
+        self.trigger_camera.clicked.connect(self.toggle_camera)
+
+        self.trigger_light = QPushButton(self.centralwidget)
+        self.trigger_light.setObjectName(u"Light On/Off")
+        self.trigger_light.setGeometry(QRect(1160, 110, 160, 40))
+        self.trigger_light.setFont(font)
+        self.trigger_light.clicked.connect(self.toggleLight)
+
+        self.camera_temperature = QLabel(self.centralwidget)
+        self.camera_temperature.setObjectName(u"Camera temperature")
+        self.camera_temperature.setGeometry(QRect(1160, 160, 160, 40))
+        self.camera_temperature.setFont(small_font)
+
+        self.jetson_temperature = QLabel(self.centralwidget)
+        self.jetson_temperature.setObjectName(u"CPU temperature")
+        self.jetson_temperature.setGeometry(QRect(1160, 180, 160, 40))
+        self.jetson_temperature.setFont(small_font)
+
+        # The capture button
+        self.CAPTURE = QPushButton(self.centralwidget)
+        self.CAPTURE.setObjectName(u"Capture Image")
+        self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
+        self.CAPTURE.setFont(font)
+        self.CAPTURE.clicked.connect(self.capture_and_display)
+
+        # self.advice_section = QLabel(self.centralwidget)
+        # self.advice_section.setObjectName(u"Advice Section")
+        # self.advice_section.setGeometry(QRect(20, 640, 71, 30))
+        # self.advice_section.setFont(font)
+
+        # self.advice_content = QLabel(self.centralwidget)
+        # self.advice_content.setObjectName(u"Advice Content")
+        # self.advice_content.setGeometry(QRect(100, 640, 500, 30))
+        # self.advice_content.setFont(font)
 
         # Save file button
         # self.Save_file = QPushButton(self.centralwidget)
@@ -149,61 +227,7 @@ class Ui_MainWindow(object):
         # self.pushButton_submit = QPushButton(self.centralwidget)
         # self.pushButton_submit.setObjectName(u"pushButton_submit")
         # self.pushButton_submit.setGeometry(QRect(840, 20, 211, 61))
-
         # self.pushButton_submit.setFont(font)
-
-        # Test result for label
-        self.label_class = QLabel(self.centralwidget)
-        self.label_class.setObjectName(u"label_class")
-        self.label_class.setGeometry(QRect(20, 530, 60, 30))
-        self.label_class.setFont(font)
-
-        self.label = QLabel(self.centralwidget)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(100, 530, 491, 30))
-        self.label.setFont(font)
-
-        self.label_2 = QLabel(self.centralwidget)
-        self.label_2.setObjectName(u"label_2")
-        self.label_2.setGeometry(QRect(100, 580, 500, 30))
-        self.label_2.setFont(font)
-        self.label_error_2 = QLabel(self.centralwidget)
-        self.label_error_2.setObjectName(u"label_error_2")
-        self.label_error_2.setGeometry(QRect(20, 640, 71, 30))
-        self.label_error_2.setFont(font)
-        self.label_3 = QLabel(self.centralwidget)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setGeometry(QRect(100, 640, 500, 30))
-        self.label_3.setFont(font)
-        self.label_error = QLabel(self.centralwidget)
-        self.label_error.setObjectName(u"label_error")
-        self.label_error.setGeometry(QRect(20, 580, 60, 30))
-        self.label_error.setFont(font)
-
-        # The error button
-        # self.ERROR1 = QPushButton(self.centralwidget)
-        # self.ERROR1.setObjectName(u"ERROR1")
-        # self.ERROR1.setGeometry(QRect(1160, 60, 160, 40))
-        # self.ERROR1.setFont(font)
-        # self.ERROR2 = QPushButton(self.centralwidget)
-        # self.ERROR2.setObjectName(u"ERROR2")
-        # self.ERROR2.setGeometry(QRect(1160, 110, 160, 40))
-        # self.ERROR2.setFont(font)
-        # self.ERROR3 = QPushButton(self.centralwidget)
-        # self.ERROR3.setObjectName(u"ERROR3")
-        # self.ERROR3.setGeometry(QRect(1160, 160, 160, 40))
-        # self.ERROR3.setFont(font)
-        # self.ERROR4 = QPushButton(self.centralwidget)
-        # self.ERROR4.setObjectName(u"ERROR4")
-        # self.ERROR4.setGeometry(QRect(1160, 210, 160, 40))
-        # self.ERROR4.setFont(font)
-
-        # The capture button
-        self.CAPTURE = QPushButton(self.centralwidget)
-        self.CAPTURE.setObjectName(u"CAPTURE")
-        self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
-        self.CAPTURE.setFont(font)
-        self.CAPTURE.clicked.connect(self.capture_and_display)
 
         #--------------------------------------------------#
         # Retrieve singleton reference to system object
@@ -243,7 +267,8 @@ class Ui_MainWindow(object):
                 node_acquisition_mode.SetIntValue(node_acquisition_mode_continuous.GetValue())
             except:
                 print("Cannot set mode.")   
-            self.cam.BeginAcquisition()    
+            self.cam.BeginAcquisition()
+            self.CAMERA_IS_ON = True
 
         #--------------------------------------------------#
         # Set timer for update frame:
@@ -265,30 +290,40 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow): ## Intergrate the widgets into window
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Camera Capture & Object Detection", None))
-        self.CAMERA.setText("")
-        self.image.setText("")
-        self.label_camera.setText(QCoreApplication.translate("MainWindow", u"Camera", None))
-        self.label_image_result.setText(QCoreApplication.translate("MainWindow", u"Image result", None))
+        self.camera_feed.setText("")
+        self.image_feed.setText("")
+        self.camera_feed_label.setText(QCoreApplication.translate("MainWindow", u"Camera", None))
+        self.image_feed_label.setText(QCoreApplication.translate("MainWindow", u"Image result", None))
 
-        self.Classification.setText(QCoreApplication.translate("MainWindow", u"Classify", None))
-        self.Defect_detecton.setText(QCoreApplication.translate("MainWindow", u"Detect Defect", None))
+        self.classify_button.setText(QCoreApplication.translate("MainWindow", u"Classify", None))
+        self.detect_button.setText(QCoreApplication.translate("MainWindow", u"Detect Defect", None))
+
+        self.classify_result_section.setText(QCoreApplication.translate("MainWindow", u"Class:", None))
+        self.detect_result_section.setText(QCoreApplication.translate("MainWindow", u"Defects:", None))
+        self.classify_result_text.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
+        self.detect_result_text.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
+
+        self.trigger_camera.setText(QCoreApplication.translate("MainWindow", u"Camera On/Off", None))
+        self.trigger_light.setText(QCoreApplication.translate("MainWindow", u"Light On/Off", None))
+        self.camera_temperature.setText(QCoreApplication.translate("MainWindow", u"Camera temperature: 37℃", None))
+        self.jetson_temperature.setText(QCoreApplication.translate("MainWindow", u"CPU temperature: 37℃", None))
+        
+        self.CAPTURE.setText(QCoreApplication.translate("MainWindow", u"CAPTURE", None))
+
         # self.Save_file.setText(QCoreApplication.translate("MainWindow", u"Save file", None))
         # self.file_saved.setText(QCoreApplication.translate("MainWindow", u"Open saved file", None))
         # self.label_name.setText(QCoreApplication.translate("MainWindow", u"NAME:", None))
         # self.label_mssv.setText(QCoreApplication.translate("MainWindow", u"MSSV:", None))
         # self.pushButton_submit.setText(QCoreApplication.translate("MainWindow", u"Submit", None))
-
         
-        self.label_class.setText(QCoreApplication.translate("MainWindow", u"Class:", None))
-        self.label_error.setText(QCoreApplication.translate("MainWindow", u"Defects:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"waiting for result", None))
-        # self.ERROR1.setText(QCoreApplication.translate("MainWindow", u"ERROR1", None))
-        # self.ERROR2.setText(QCoreApplication.translate("MainWindow", u"ERROR2", None))
-        # self.ERROR3.setText(QCoreApplication.translate("MainWindow", u"ERROR3", None))
-        # self.ERROR4.setText(QCoreApplication.translate("MainWindow", u"ERROR4", None))
-        self.CAPTURE.setText(QCoreApplication.translate("MainWindow", u"CAPTURE", None))
+        
+    def toggle_camera(self):
+        
+        return
     
+    def toggle_light(self):
+
+        return
     def update_frame(self):
         #Read camera
         display_frame = self.cam.GetNextImage(1000)
@@ -296,9 +331,9 @@ class Ui_MainWindow(object):
         # h = 1200, w = 1600, ch = 3, byte per line = ch*w
         Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
         pixmap_format = QPixmap.fromImage(Qt_format)
-        self.CAMERA.setPixmap(pixmap_format.scaled(self.CAMERA.size(), Qt.KeepAspectRatio))
+        self.camera_feed.setPixmap(pixmap_format.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
 
-    def detect_result(self):
+    def detect(self):
         if self.prediction == "C" or self.prediction == "D":
             self.label_2.setText(QCoreApplication.translate("MainWindow", u"Class C and D does not have to detect defects", None))
             return
@@ -308,16 +343,16 @@ class Ui_MainWindow(object):
             img_bytes = response.content
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
-            self.image.setPixmap(pixmap.scaled(self.image.size(), Qt.KeepAspectRatio))
+            self.image_feed.setPixmap(pixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
 
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
         capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
-        self.image.setPixmap(capture_pixmap_format.scaled(self.image.size(), Qt.KeepAspectRatio))
+        self.image_feed.setPixmap(capture_pixmap_format.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
 
-    def classify_result(self):
+    def classify(self): # Send and return image from classification task
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post('http://192.168.1.121:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
