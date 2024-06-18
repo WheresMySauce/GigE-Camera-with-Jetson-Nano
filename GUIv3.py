@@ -158,7 +158,7 @@ class Ui_MainWindow(object):
 
         self.detect_result_text = QLabel(self.centralwidget)
         self.detect_result_text.setObjectName("Detect Text")
-        self.detect_result_text.setGeometry(QRect(100, 580, 500, 30))
+        self.detect_result_text.setGeometry(QRect(100, 580, 500, 300))
         self.detect_result_text.setFont(font)
 
         # The trigger button
