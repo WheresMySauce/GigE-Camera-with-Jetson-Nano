@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import *
 # Image processing
 import cv2
 import requests
+import time
 # Camera processing
 import PySpin
 # Jetson nano pinouts
@@ -18,8 +19,10 @@ SERVER_ADDRESS = 'http://192.168.1.121'
 CAMERA_PIN = 16
 LIGHT_PIN = 18
 
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(CAMERA_PIN, GPIO.OUT, initial=GPIO.LOW)
+time.sleep(10)
 GPIO.setup(LIGHT_PIN, GPIO.OUT, initial=GPIO.LOW)
 
 class Ui_MainWindow(object):
@@ -169,7 +172,7 @@ class Ui_MainWindow(object):
         self.trigger_light.setObjectName("Light On/Off")
         self.trigger_light.setGeometry(QRect(1160, 110, 160, 40))
         self.trigger_light.setFont(font)
-        self.trigger_light.clicked.connect(self.toggleLight)
+        self.trigger_light.clicked.connect(self.toggle_light)
 
         self.camera_temperature = QLabel(self.centralwidget)
         self.camera_temperature.setObjectName("Camera temperature")
@@ -329,39 +332,48 @@ class Ui_MainWindow(object):
 
     def toggle_camera(self):
         if self.CAMERA_PWR_IS_ON == True:
-            self.clean_up_camera()
+            self.CAMERA_PWR_IS_ON = False
+            # self.clean_up_camera()
+            # time.sleep(3)
             GPIO.output(CAMERA_PIN, GPIO.HIGH)
-            self.CAMERA_PWR_IS_ON == False
+            # time.sleep(10)
         else:
-            self.initialize_camera()
+            self.CAMERA_PWR_IS_ON = True
             GPIO.output(CAMERA_PIN, GPIO.LOW)
-            self.CAMERA_PWR_IS_ON == True
+            time.sleep(15)
+            self.initialize_camera()
     def toggle_light(self):
         if self.LIGHT_PWR_IS_ON == True:
             GPIO.output(LIGHT_PIN, GPIO.HIGH)
-            self.LIGHT_PWR_IS_ON == False
+            self.LIGHT_PWR_IS_ON = False
         else:
             GPIO.output(LIGHT_PIN, GPIO.LOW)
-            self.LIGHT_PWR_IS_ON == True
+            self.LIGHT_PWR_IS_ON = True
     
     def update_frame(self):
         #Read camera
-        display_frame = self.cam.GetNextImage(1000)
-        display_frame_data = display_frame.GetNDArray()
-        # h = 1200, w = 1600, ch = 3, byte per line = ch*w
-        Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
-        pixmap_format = QPixmap.fromImage(Qt_format)
-        self.camera_feed.setPixmap(pixmap_format.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
+        try:
+            display_frame = self.cam.GetNextImage(1000)
+            display_frame_data = display_frame.GetNDArray()
+            # h = 1200, w = 1600, ch = 3, byte per line = ch*w
+            Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
+            pixmap_format = QPixmap.fromImage(Qt_format)
+            self.camera_feed.setPixmap(pixmap_format.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
+        except:
+            print("Waiting for camera")
     def update_temperature(self):
-        node_temperature = PySpin.CFloatPtr(self.nodemap.GetNode("DeviceTemperature"))
-        with open('/sys/devices/virtual/thermal/thermal_zone0/temp', 'r') as temp_file:
-            jetson_temp = temp_file.read().strip()
-        self.jetson_temperature.setText(
-            QCoreApplication.translate("MainWindow", "CPU temperature: {:.2f} °C".format(float(jetson_temp) / 1000.0), None)
-        )
-        self.camera_temperature.setText(
-            QCoreApplication.translate("MainWindow", "Camera temperature: {:.2f} °C".format(node_temperature.GetValue()), None)
-        )
+        try:
+            node_temperature = PySpin.CFloatPtr(self.nodemap.GetNode("DeviceTemperature"))
+            with open('/sys/devices/virtual/thermal/thermal_zone0/temp', 'r') as temp_file:
+                jetson_temp = temp_file.read().strip()
+            self.jetson_temperature.setText(
+                QCoreApplication.translate("MainWindow", "CPU temperature: {:.2f} °C".format(float(jetson_temp) / 1000.0), None)
+            )
+            self.camera_temperature.setText(
+                QCoreApplication.translate("MainWindow", "Camera temperature: {:.2f} °C".format(node_temperature.GetValue()), None)
+            )
+        except:
+            print("Wating for camera...")
         
         return
     def detect(self):
