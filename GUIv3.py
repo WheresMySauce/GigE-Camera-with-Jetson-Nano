@@ -391,6 +391,12 @@ class Ui_MainWindow(object):
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
+        _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
+        response = requests.post(f'{SERVER_ADDRESS}:5000/weld_check', files={'file': img_encoded.tobytes()})
+        if response.status_code == 200:
+            self.weld_check = response.json().get('weld_check')
+            self.classify_result_text.setText(f'{self.weld_check}')        
+            
         capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
         self.image_feed.setPixmap(capture_pixmap_format.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
@@ -400,7 +406,7 @@ class Ui_MainWindow(object):
         response = requests.post(f'{SERVER_ADDRESS}:5000/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             self.prediction = response.json().get('prediction', 'Error')
-            self.label.setText(f'{self.prediction}')
+            self.classify_result_text.setText(f'{self.prediction}')
 
     def closeEvent(self, event):
         self.cam.EndAcquisition()
