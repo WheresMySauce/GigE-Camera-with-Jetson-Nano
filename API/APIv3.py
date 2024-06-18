@@ -46,7 +46,7 @@ app = Flask(__name__)
 detect_model = YOLO('best.pt')  
 class_dict = detect_model.names
 # Load the pre-trained VIT model
-pipe = pipeline("image-classification", model="th041/vit-weld-classify")
+pipe = pipeline("image-classification", model="th041/vit-weldclassifyv2")
 #------------------------------------------------------------------------------------------------------#
 @app.route('/detect', methods=['POST'])
 def detect():
