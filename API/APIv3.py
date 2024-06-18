@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify
 
 import cv2
 import numpy as np
-
+## Image processing
 from ultralytics import YOLO
-import tensorflow as tf
-from tensorflow.keras.applications.resnet_v2 import ResNet50V2, preprocess_input, decode_predictions
+from PIL import Image
+from transformers import pipeline
+
 
 
 
@@ -16,14 +17,9 @@ app = Flask(__name__)
 # Load your YOLOv8 model
 detect_model = YOLO('best.pt')  
 
-# Load the pre-trained ResNet50V2 model
-classify_model = tf.keras.models.load_model('resnet_ABC.keras')
-class_names = ['AB','C','D']
-
+# Load the pre-trained VIT model
+pipe = pipeline("image-classification", model="th041/vit-weld-classify")
 #------------------------------------------------------------------------------------------------------#
-
-
-
 @app.route('/detect', methods=['POST'])
 def detect():
     nparr = np.frombuffer(request.data, np.uint8)
@@ -50,21 +46,34 @@ def classify():
     # Convert numpy array to image
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # Resize and preprocess image
-    img_resized = cv2.resize(img, (224, 224))
+    pil_image = Image.fromarray(img)
 
-    cv2.imwrite("saved_img.jpg", img_resized)
-    img_array = np.expand_dims(img_resized, axis=0)
-    img_array = preprocess_input(img_array)
-    
-    # Predictx
-    predictions = classify_model.predict(img_array)
-    # decoded_predictions = decode_predictions(predictions, top=1)[0]
-    # prediction = decoded_predictions[0][1]  # Get the label of the top prediction
-    class_id = np.argmax(predictions, axis = 1)
-    class_name = class_names[class_id.item()]
+    # Predict
+    results = pipe(pil_image)
+    best_result = max(results, key=lambda x: x['score'])
+    return jsonify({'prediction': best_result['label']})
 
-    return jsonify({'prediction': class_name})
+@app.route('/weld_check', methods=['POST'])
+def weld_check():
+    file = request.files['file']
+    nparr = np.frombuffer(file.read(), np.uint8)
+    # Convert numpy array to image
+    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # Apply GaussianBlur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Perform edge detection
+    edges = cv2.Canny(blurred, 50, 150)
+
+    # Analyze edges
+    num_edges = np.sum(edges > 0)
+    print(num_edges)
+    if num_edges > 5000:
+        return jsonify({'weld_check': "Weld bead detected"})
+    else:
+        return jsonify({'weld_check': "Warning: No weld bead detected"})
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0") 
