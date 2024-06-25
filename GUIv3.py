@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # System
+import base64
 import sys
 # GUI
 from PyQt5.QtCore import *
@@ -148,18 +149,22 @@ class Ui_MainWindow(object):
 
         self.classify_result_text = QLabel(self.centralwidget)
         self.classify_result_text.setObjectName("Classify Text")
-        self.classify_result_text.setGeometry(QRect(100, 530, 491, 30))
+        self.classify_result_text.setGeometry(QRect(100, 530, 1000, 100))
         self.classify_result_text.setFont(font)
-
+        self.classify_result_text.setWordWrap(True)
+        self.classify_result_text.setAlignment(Qt.AlignTop)
+        
         self.detect_result_section = QLabel(self.centralwidget)
         self.detect_result_section.setObjectName("Detect Section")
-        self.detect_result_section.setGeometry(QRect(20, 580, 60, 30))
+        self.detect_result_section.setGeometry(QRect(20, 580, 65, 30))
         self.detect_result_section.setFont(font)
 
         self.detect_result_text = QLabel(self.centralwidget)
         self.detect_result_text.setObjectName("Detect Text")
-        self.detect_result_text.setGeometry(QRect(100, 580, 500, 300))
+        self.detect_result_text.setGeometry(QRect(100, 580, 1000, 500))
         self.detect_result_text.setFont(font)
+        self.detect_result_text.setWordWrap(True)
+        self.detect_result_text.setAlignment(Qt.AlignTop)
 
         # The trigger button
         self.trigger_camera = QPushButton(self.centralwidget)
@@ -271,7 +276,7 @@ class Ui_MainWindow(object):
         self.detect_button.setText(QCoreApplication.translate("MainWindow", "Detect Defect", None))
 
         self.classify_result_section.setText(QCoreApplication.translate("MainWindow", "Class:", None))
-        self.detect_result_section.setText(QCoreApplication.translate("MainWindow", "Defects:", None))
+        self.detect_result_section.setText(QCoreApplication.translate("MainWindow", "Advice:", None))
         self.classify_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for result", None))
         self.detect_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for result", None))
 
@@ -307,10 +312,10 @@ class Ui_MainWindow(object):
             node_height.SetValue(300)
 
             node_offsetX = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetX'))
-            node_offsetX.SetValue(380)
+            node_offsetX.SetValue(480)
 
             node_offsetY = PySpin.CIntegerPtr(self.nodemap.GetNode('OffsetY'))
-            node_offsetY.SetValue(384)
+            node_offsetY.SetValue(390)
 
             node_pixel_format = PySpin.CEnumerationPtr(self.nodemap.GetNode('PixelFormat'))
             node_pixel_format_RGB = node_pixel_format.GetEntryByName('RGB8Packed')
@@ -383,11 +388,14 @@ class Ui_MainWindow(object):
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post(f'{SERVER_ADDRESS}:5000/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
-            img_bytes = response.content
+            data = response.json()
+            advice = data['advice']
+            img_base64 = data['image']
+            img_bytes = base64.b64decode(img_base64)
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
             self.image_feed.setPixmap(pixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
-
+            self.detect_result_text.setText(f'{advice}')
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
