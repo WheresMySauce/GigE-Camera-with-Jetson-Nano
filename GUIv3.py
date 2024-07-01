@@ -522,7 +522,7 @@ class Ui_MainWindow(object):
             # h = 1200, w = 1600, ch = 3, byte per line = ch*w
             Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
             pixmap_format = QPixmap.fromImage(Qt_format)
-            flipped_pixmap = pixmap_format.transformed(QTransform().scale(-1, 1))
+            flipped_pixmap = pixmap_format.transformed(QTransform().rotate(180))
             self.camera_feed.setPixmap(flipped_pixmap.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
         except:
             print("Waiting for camera")
@@ -554,8 +554,7 @@ class Ui_MainWindow(object):
             img_bytes = base64.b64decode(img_base64)
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
-            flipped_Dpixmap = pixmap.transformed(QTransform().scale(-1, 1))
-            self.image_feed.setPixmap(flipped_Dpixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
+            self.image_feed.setPixmap(pixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
             self.detect_result_text.setText(f'{advice}')
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
@@ -567,7 +566,7 @@ class Ui_MainWindow(object):
             self.classify_result_text.setText(f'{self.weld_check}')        
         capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
-        flip_capture_pixmap_format = capture_pixmap_format.transformed(QTransform().scale(-1, 1))
+        flip_capture_pixmap_format = capture_pixmap_format.transformed(QTransform().rotate(180))
         self.image_feed.setPixmap(flip_capture_pixmap_format.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
         self.classify_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
         self.detect_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
