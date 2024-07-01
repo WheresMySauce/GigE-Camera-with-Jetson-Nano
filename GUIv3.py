@@ -4,9 +4,9 @@ import base64
 import sys
 import os
 # GUI
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtCore import QRect, Qt, QTimer, QMetaObject, QCoreApplication
+from PyQt5.QtGui import QFont, QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QPushButton, QMenuBar, QStatusBar, QApplication, QMainWindow
 # Image processing
 import cv2
 import requests
@@ -24,7 +24,6 @@ LIGHT_PIN = 18
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(CAMERA_PIN, GPIO.OUT, initial=GPIO.LOW)
-time.sleep(10)
 GPIO.setup(LIGHT_PIN, GPIO.OUT, initial=GPIO.LOW)
 
 class Ui_MainWindow(object):
@@ -34,20 +33,17 @@ class Ui_MainWindow(object):
         # Window initialize
         if not MainWindow.objectName():
             MainWindow.setObjectName("MainWindow")
-
         MainWindow.resize(1366, 768)
+        MainWindow.setStyleSheet("background-color: white;")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        
         # Set up fonts
         font = QFont()
         font.setFamily("Arial")
         font.setPointSize(16)
-
         small_font = QFont()
         small_font.setFamily("Arial")
         small_font.setPointSize(10)
-
         bold_font = QFont()
         bold_font.setFamily("Arial")
         bold_font.setPointSize(16)
@@ -58,11 +54,11 @@ class Ui_MainWindow(object):
         self.line = QFrame(self.centralwidget)
         self.line.setObjectName("line")
         self.line.setGeometry(QRect(1100, 0, 20, 766))
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.line.sizePolicy().hasHeightForWidth())
-        self.line.setSizePolicy(sizePolicy)
+        # sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(self.line.sizePolicy().hasHeightForWidth())
+        # self.line.setSizePolicy(sizePolicy)
 
         self.line.setFont(font)
         self.line.setMouseTracking(False)
@@ -74,7 +70,7 @@ class Ui_MainWindow(object):
 
         self.line_2 = QFrame(self.centralwidget)
         self.line_2.setObjectName("line_2")
-        self.line_2.setGeometry(QRect(0, 500, 1110, 20))
+        self.line_2.setGeometry(QRect(0, 500, 1110, 3))
         self.line_2.setFont(font)
         self.line_2.setFrameShadow(QFrame.Plain)
         self.line_2.setLineWidth(3)
@@ -90,12 +86,22 @@ class Ui_MainWindow(object):
 
         self.line_4 = QFrame(self.centralwidget)
         self.line_4.setObjectName("line_4")
-        self.line_4.setGeometry(QRect(1110, 240, 1110, 20))
+        self.line_4.setGeometry(QRect(1110, 240, 1110, 3))
         self.line_4.setFont(font)
         self.line_4.setFrameShadow(QFrame.Plain)
         self.line_4.setLineWidth(3)
         self.line_4.setFrameShape(QFrame.HLine)
-        
+
+        self.khoaCKM = QLabel(self.centralwidget)
+        self.khoaCKM.setObjectName("KhoaCKM")
+        self.khoaCKM.setPixmap(QPixmap("images/khoackmresized.jpg"))
+        # self.khoaCKM.setGeometry(QRect(0, 0, 432, 100))
+        # self.khoaCKM.setScaledContents(True)
+        self.projectTitle = QLabel(self.centralwidget)
+        self.projectTitle.setObjectName("projectTitle")
+        self.projectTitle.setText("<div align='center' style='font-family: Arial; font-size: 20px; font-weight: bold;'>CAPSTONE PROJECT</div><div align='center' style='font-family: Arial; font-size: 20px;'>DESIGN AND FABRICATION OF A VISUAL INSPECTION WORKSTATION FOR MANUAL ARC WELDING APPLIED IN WELDING TRAINING</div>")        
+        self.projectTitle.setGeometry(QRect(460, 0, 600, 100))  # Adjust the size (600, 100) as needed
+        self.projectTitle.setWordWrap(True)
         # Camera feed
         self.camera_feed = QLabel(self.centralwidget)
         self.camera_feed.setObjectName("Camera Feed")
@@ -153,6 +159,12 @@ class Ui_MainWindow(object):
         self.classify_result_section.setObjectName("Classify Section")
         self.classify_result_section.setGeometry(QRect(20, 530, 60, 30))
         self.classify_result_section.setFont(font)
+        # The capture button
+        self.CAPTURE = QPushButton(self.centralwidget)
+        self.CAPTURE.setObjectName("Capture Image")
+        self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
+        self.CAPTURE.setFont(font)
+        self.CAPTURE.clicked.connect(self.capture_and_display)
 
         self.classify_result_text = QLabel(self.centralwidget)
         self.classify_result_text.setObjectName("Classify Text")
@@ -176,32 +188,25 @@ class Ui_MainWindow(object):
         # The trigger button
         self.trigger_camera = QPushButton(self.centralwidget)
         self.trigger_camera.setObjectName("Camera On/Off")
-        self.trigger_camera.setGeometry(QRect(1160, 60, 160, 40))
+        self.trigger_camera.setGeometry(QRect(1137, 60, 160, 40))
         self.trigger_camera.setFont(font)
         self.trigger_camera.clicked.connect(self.toggle_camera)
 
         self.trigger_light = QPushButton(self.centralwidget)
         self.trigger_light.setObjectName("Light On/Off")
-        self.trigger_light.setGeometry(QRect(1160, 110, 160, 40))
+        self.trigger_light.setGeometry(QRect(1137, 110, 160, 40))
         self.trigger_light.setFont(font)
         self.trigger_light.clicked.connect(self.toggle_light)
 
         self.camera_temperature = QLabel(self.centralwidget)
         self.camera_temperature.setObjectName("Camera temperature")
-        self.camera_temperature.setGeometry(QRect(1160, 160, 160, 40))
+        self.camera_temperature.setGeometry(QRect(1160, 160, 160, 20))
         self.camera_temperature.setFont(small_font)
 
         self.jetson_temperature = QLabel(self.centralwidget)
         self.jetson_temperature.setObjectName("CPU temperature")
-        self.jetson_temperature.setGeometry(QRect(1160, 180, 160, 40))
+        self.jetson_temperature.setGeometry(QRect(1160, 180, 160, 20))
         self.jetson_temperature.setFont(small_font)
-
-        # The capture button
-        self.CAPTURE = QPushButton(self.centralwidget)
-        self.CAPTURE.setObjectName("Capture Image")
-        self.CAPTURE.setGeometry(QRect(1120, 280, 241, 61))
-        self.CAPTURE.setFont(font)
-        self.CAPTURE.clicked.connect(self.capture_and_display)
 
         # self.advice_section = QLabel(self.centralwidget)
         # self.advice_section.setObjectName("Advice Section")
@@ -243,15 +248,87 @@ class Ui_MainWindow(object):
         # self.label_mssv.setGeometry(QRect(420, 40, 81, 21))
         # self.label_mssv.setFont(font)
 
-        # Submit button
-        # self.pushButton_submit = QPushButton(self.centralwidget)
-        # self.pushButton_submit.setObjectName("pushButton_submit")
-        # self.pushButton_submit.setGeometry(QRect(840, 20, 211, 61))
-        # self.pushButton_submit.setFont(font)
-
-        #--------------------------------------------------#
-        # Retrieve singleton reference to system object
-
+        # Set button effect
+        self.trigger_camera.setStyleSheet("""
+        QPushButton {
+            background-color: green;
+            color: white;
+            border-style: outset;
+            border-width: 2px;
+            border-radius: 10px;
+            border-color: beige;
+            font: bold 16px;
+            min-width: 10em;
+            padding: 6px;
+        }
+        QPushButton:hover {
+            background-color: #5FbF6F;
+        }
+        QPushButton:pressed {
+            background-color: #58AB5F;
+            border-style: inset;
+        }
+        """)
+        self.trigger_light.setStyleSheet("""
+        QPushButton {
+            background-color: green;
+            color: white;
+            border-style: outset;
+            border-width: 2px;
+            border-radius: 10px;
+            border-color: beige;
+            font: bold 16px;
+            min-width: 10em;
+            padding: 6px;
+        }
+        QPushButton:hover {
+            background-color: #5FbF6F;
+        }
+        QPushButton:pressed {
+            background-color: #58AB5F;
+            border-style: inset;
+        }
+        """)
+        self.CAPTURE.setStyleSheet("""
+        QPushButton {
+            background-color: #3498db; color: white;
+            border-style: solid; border-width: 2px;
+            border-radius: 10px; border-color: #2980b9;
+            padding: 5px; font: bold 20px;
+        }
+        QPushButton:hover { background-color: #2980b9; }
+        QPushButton:pressed { background-color: #1f78b4; }
+        """)
+        self.classify_button.setStyleSheet("""
+        QPushButton {
+            background-color: green; color: white;
+            border-style: solid; border-width: 2px;
+            border-radius: 10px; border-color: #27ae60;
+            padding: 5px; font: bold 20px;
+        }
+        QPushButton:hover { background-color: #27ae60; }
+        QPushButton:pressed { background-color: #229954; }
+        """)
+        self.detect_button.setStyleSheet("""
+        QPushButton {
+            background-color: green; color: white;
+            border-style: solid; border-width: 2px;
+            border-radius: 10px; border-color: #27ae60;
+            padding: 5px; font: bold 20px;
+        }
+        QPushButton:hover { background-color: #27ae60; }
+        QPushButton:pressed { background-color: #229954; }
+        """)
+        self.turn_off_button.setStyleSheet("""
+        QPushButton {
+            background-color: red; color: white;
+            border-style: solid; border-width: 2px;
+            border-radius: 10px; border-color: #c0392b;
+            padding: 5px; font: bold 20px;
+        }
+        QPushButton:hover { background-color: #FF7F7F; }
+        QPushButton:pressed { background-color: #a93226; }
+        """)
         #--------------------------------------------------#
         # Set timer for update frame:
         self.timer = QTimer()
@@ -279,21 +356,20 @@ class Ui_MainWindow(object):
         self.camera_feed_label.setText(QCoreApplication.translate("MainWindow", "Camera", None))
         self.image_feed_label.setText(QCoreApplication.translate("MainWindow", "Image result", None))
 
+        self.CAPTURE.setText(QCoreApplication.translate("MainWindow", "CAPTURE", None))
         self.classify_button.setText(QCoreApplication.translate("MainWindow", "Classify", None))
         self.detect_button.setText(QCoreApplication.translate("MainWindow", "Detect Defect", None))
+        self.turn_off_button.setText(QCoreApplication.translate("MainWindow", "TURN OFF", None))
 
         self.classify_result_section.setText(QCoreApplication.translate("MainWindow", "Class:", None))
         self.detect_result_section.setText(QCoreApplication.translate("MainWindow", "Advice:", None))
-        self.classify_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for result", None))
-        self.detect_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for result", None))
+        self.classify_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
+        self.detect_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
 
         self.trigger_camera.setText(QCoreApplication.translate("MainWindow", "Camera On/Off", None))
         self.trigger_light.setText(QCoreApplication.translate("MainWindow", "Light On/Off", None))
         self.camera_temperature.setText(QCoreApplication.translate("MainWindow", "Camera temperature:", None))
         self.jetson_temperature.setText(QCoreApplication.translate("MainWindow", "CPU temperature:", None))
-
-        self.CAPTURE.setText(QCoreApplication.translate("MainWindow", "CAPTURE", None))
-
         # self.Save_file.setText(QCoreApplication.translate("MainWindow", "Save file", None))
         # self.file_saved.setText(QCoreApplication.translate("MainWindow", "Open saved file", None))
         # self.label_name.setText(QCoreApplication.translate("MainWindow", "NAME:", None))
@@ -345,23 +421,99 @@ class Ui_MainWindow(object):
     def toggle_camera(self):
         if self.CAMERA_PWR_IS_ON == True:
             self.CAMERA_PWR_IS_ON = False
-            # self.clean_up_camera()
-            # time.sleep(3)
             GPIO.output(CAMERA_PIN, GPIO.HIGH)
-            # time.sleep(10)
+            self.trigger_camera.setStyleSheet("""
+                QPushButton {
+                    background-color: red;
+                    color: white;
+                    border-style: outset;
+                    border-width: 2px;
+                    border-radius: 10px;
+                    border-color: beige;
+                    font: bold 14px;
+                    min-width: 10em;
+                    padding: 6px;
+                }
+                QPushButton:hover {
+                    background-color: #FF7F7F;
+                }
+                QPushButton:pressed {
+                    background-color: #DF5F5F;
+                    border-style: inset;
+                }
+            """)               
         else:
             self.CAMERA_PWR_IS_ON = True
             GPIO.output(CAMERA_PIN, GPIO.LOW)
+            self.trigger_camera.setStyleSheet("""
+            QPushButton {
+                background-color: green;
+                color: white;
+                border-style: outset;
+                border-width: 2px;
+                border-radius: 10px;
+                border-color: beige;
+                font: bold 16px;
+                min-width: 10em;
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background-color: #5FbF6F;
+            }
+            QPushButton:pressed {
+                background-color: #58AB5F;
+                border-style: inset;
+            }
+            """)         
             time.sleep(15)
             self.initialize_camera()
     def toggle_light(self):
         if self.LIGHT_PWR_IS_ON == True:
             GPIO.output(LIGHT_PIN, GPIO.HIGH)
+            self.trigger_light.setStyleSheet("""
+                QPushButton {
+                    background-color: red;
+                    color: white;
+                    border-style: outset;
+                    border-width: 2px;
+                    border-radius: 10px;
+                    border-color: beige;
+                    font: bold 14px;
+                    min-width: 10em;
+                    padding: 6px;
+                }
+                QPushButton:hover {
+                    background-color: #FF7F7F;
+                }
+                QPushButton:pressed {
+                    background-color: #DF5F5F;
+                    border-style: inset;
+                }
+            """)  
             self.LIGHT_PWR_IS_ON = False
         else:
             GPIO.output(LIGHT_PIN, GPIO.LOW)
             self.LIGHT_PWR_IS_ON = True
-    
+            self.trigger_light.setStyleSheet("""
+            QPushButton {
+                background-color: green;
+                color: white;
+                border-style: outset;
+                border-width: 2px;
+                border-radius: 10px;
+                border-color: beige;
+                font: bold 16px;
+                min-width: 10em;
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background-color: #5FbF6F;
+            }
+            QPushButton:pressed {
+                background-color: #58AB5F;
+                border-style: inset;
+            }
+            """)
     def update_frame(self):
         #Read camera
         try:
@@ -370,7 +522,8 @@ class Ui_MainWindow(object):
             # h = 1200, w = 1600, ch = 3, byte per line = ch*w
             Qt_format = QImage(display_frame_data, 744, 300, QImage.Format_RGB888)
             pixmap_format = QPixmap.fromImage(Qt_format)
-            self.camera_feed.setPixmap(pixmap_format.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
+            flipped_pixmap = pixmap_format.transformed(QTransform().scale(-1, 1))
+            self.camera_feed.setPixmap(flipped_pixmap.scaled(self.camera_feed.size(), Qt.KeepAspectRatio))
         except:
             print("Waiting for camera")
     def update_temperature(self):
@@ -401,7 +554,8 @@ class Ui_MainWindow(object):
             img_bytes = base64.b64decode(img_base64)
             pixmap = QPixmap()
             pixmap.loadFromData(img_bytes)
-            self.image_feed.setPixmap(pixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
+            flipped_Dpixmap = pixmap.transformed(QTransform().scale(-1, 1))
+            self.image_feed.setPixmap(flipped_Dpixmap.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
             self.detect_result_text.setText(f'{advice}')
     def capture_and_display(self):
         capture_frame = self.cam.GetNextImage(1000)
@@ -411,18 +565,18 @@ class Ui_MainWindow(object):
         if response.status_code == 200:
             self.weld_check = response.json().get('weld_check')
             self.classify_result_text.setText(f'{self.weld_check}')        
-            
         capture_Qt_format = QImage(self.capture_frame_data, 744, 300, QImage.Format_RGB888)
         capture_pixmap_format = QPixmap.fromImage(capture_Qt_format)
-        self.image_feed.setPixmap(capture_pixmap_format.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
-
+        flip_capture_pixmap_format = capture_pixmap_format.transformed(QTransform().scale(-1, 1))
+        self.image_feed.setPixmap(flip_capture_pixmap_format.scaled(self.image_feed.size(), Qt.KeepAspectRatio))
+        self.classify_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
+        self.detect_result_text.setText(QCoreApplication.translate("MainWindow", "waiting for input", None))
     def classify(self): # Send and return image from classification task
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
         response = requests.post(f'{SERVER_ADDRESS}/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             self.prediction = response.json().get('prediction', 'Error')
             self.classify_result_text.setText(f'{self.prediction}')
-
     def turn_off(self):
         os.system("sudo shutdown now")
     def closeEvent(self, event):
