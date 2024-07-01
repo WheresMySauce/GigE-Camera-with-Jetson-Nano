@@ -2,6 +2,7 @@
 # System
 import base64
 import sys
+import os
 # GUI
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -16,7 +17,7 @@ import PySpin
 import Jetson.GPIO as GPIO
 
 # Fix variable
-SERVER_ADDRESS = 'http://192.168.1.121'
+SERVER_ADDRESS = 'https://flaskgg-6otzndbmqa-as.a.run.app'
 CAMERA_PIN = 16
 LIGHT_PIN = 18
 
@@ -140,6 +141,12 @@ class Ui_MainWindow(object):
         self.detect_button.setGeometry(QRect(1120, 420, 241, 61))
         self.detect_button.setFont(font)
         self.detect_button.clicked.connect(self.detect)
+
+        self.turn_off_button = QPushButton(self.centralwidget)
+        self.turn_off_button.setObjectName("Turn off")
+        self.turn_off_button.setGeometry(QRect(1120, 600, 241, 61))
+        self.turn_off_button.setFont(font)
+        self.turn_off_button.clicked.connect(self.turn_off)
 
         # Test result for label
         self.classify_result_section = QLabel(self.centralwidget)
@@ -386,7 +393,7 @@ class Ui_MainWindow(object):
         #     self.label_2.setText(QCoreApplication.translate("MainWindow", "Class C and D does not have to detect defects", None))
         #     return
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
-        response = requests.post(f'{SERVER_ADDRESS}:5000/detect', data=img_encoded.tobytes())
+        response = requests.post(f'{SERVER_ADDRESS}/detect', data=img_encoded.tobytes())
         if response.status_code == 200:
             data = response.json()
             advice = data['advice']
@@ -400,7 +407,7 @@ class Ui_MainWindow(object):
         capture_frame = self.cam.GetNextImage(1000)
         self.capture_frame_data = capture_frame.GetNDArray()
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
-        response = requests.post(f'{SERVER_ADDRESS}:5000/weld_check', files={'file': img_encoded.tobytes()})
+        response = requests.post(f'{SERVER_ADDRESS}/weld_check', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             self.weld_check = response.json().get('weld_check')
             self.classify_result_text.setText(f'{self.weld_check}')        
@@ -411,11 +418,13 @@ class Ui_MainWindow(object):
 
     def classify(self): # Send and return image from classification task
         _, img_encoded = cv2.imencode('.jpg', self.capture_frame_data)
-        response = requests.post(f'{SERVER_ADDRESS}:5000/classify', files={'file': img_encoded.tobytes()})
+        response = requests.post(f'{SERVER_ADDRESS}/classify', files={'file': img_encoded.tobytes()})
         if response.status_code == 200:
             self.prediction = response.json().get('prediction', 'Error')
             self.classify_result_text.setText(f'{self.prediction}')
 
+    def turn_off(self):
+        os.system("sudo shutdown now")
     def closeEvent(self, event):
         self.cam.EndAcquisition()
         # Deinitialize camera
