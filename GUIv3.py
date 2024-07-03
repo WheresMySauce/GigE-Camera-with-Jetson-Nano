@@ -6,7 +6,7 @@ import os
 # GUI
 from PyQt5.QtCore import QRect, Qt, QTimer, QMetaObject, QCoreApplication
 from PyQt5.QtGui import QFont, QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QPushButton, QMenuBar, QStatusBar, QApplication, QMainWindow
+from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QPushButton, QMenuBar, QStatusBar, QApplication, QMainWindow, QMessageBox
 # Image processing
 import cv2
 import requests
@@ -347,8 +347,24 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.initialize_camera()
         QMetaObject.connectSlotsByName(MainWindow)
+        # self.show_manual()
 
+    # def show_manual(self):
+    #     # Initialize the window
+    #     self.image_window = QWidget()
+    #     self.image_window.resize(400, 300)  # Adjust size as needed
+    #     self.image_window.setWindowTitle("Image Window")
 
+    #     # Set up the label and pixmap
+    #     label = QLabel(self.image_window)
+    #     label.setPixmap(QPixmap("images/khoackmresized.jpg"))  # Adjust path to your image
+    #     label.resize(400, 300)  # Adjust size as needed
+
+    #     # Show the window
+    #     self.image_window.show()
+
+    #     # Set up a QTimer to close the window after 5 seconds
+    #     QTimer.singleShot(5000, self.image_window.close)   
     def retranslateUi(self, MainWindow): ## Intergrate the widgets into window
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", "Camera Capture & Object Detection", None))
         self.camera_feed.setText("")
@@ -577,7 +593,13 @@ class Ui_MainWindow(object):
             self.prediction = response.json().get('prediction', 'Error')
             self.classify_result_text.setText(f'{self.prediction}')
     def turn_off(self):
-        os.system("sudo shutdown now")
+        reply = QMessageBox.question(
+            None, 'Confirmation', 'Are you sure?',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            QApplication.instance().quit()
+            os.system("sudo shutdown now")
     def closeEvent(self, event):
         self.cam.EndAcquisition()
         # Deinitialize camera
