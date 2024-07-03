@@ -370,7 +370,7 @@ class Ui_MainWindow(object):
         self.camera_feed.setText("")
         self.image_feed.setText("")
         self.camera_feed_label.setText(QCoreApplication.translate("MainWindow", "Camera", None))
-        self.image_feed_label.setText(QCoreApplication.translate("MainWindow", "Image result", None))
+        self.image_feed_label.setText(QCoreApplication.translate("MainWindow", "Result", None))
 
         self.CAPTURE.setText(QCoreApplication.translate("MainWindow", "CAPTURE", None))
         self.classify_button.setText(QCoreApplication.translate("MainWindow", "Classify", None))
